@@ -1,0 +1,21 @@
+__pycache__
+.DS_Store
+node_modules/
+dist/
+main/env/
+main/env/Lib/site-packages/
+site-packages/
+npm-debug.log*
+obj/
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+tests/**/coverage/
+task/conf/config.json
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.pyc
