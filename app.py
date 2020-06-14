@@ -29,17 +29,12 @@ password = 'tongji2020'
 database = 'postgres'
 dd = 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, database)
 
-# UPLOAD_FOLDER = 'D:/uploads'
-UPLOAD_FOLDER = '/var/upload'
+UPLOAD_FOLDER = 'D:/uploads'
+# UPLOAD_FOLDER = '/var/upload'
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'])
 
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-
-def allowed_file(filename):
-	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 conn = psycopg2.connect(
         database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
@@ -466,28 +461,147 @@ def falseReturn(data, msg):
 # ------------------------------------------------------------------------------------------------------
 
 @app.route('/api/u/fdb/task', methods=['POST'])
-def upload_file():
-	# check if the post request has the file part
-	if 'file' not in request.files:
-		resp = jsonify({'message' : 'No file part in the request'})
-		resp.status_code = 400
-		return resp
-	file = request.files['file']
-	if file.filename == '':
-		resp = jsonify({'message' : 'No file selected for uploading'})
-		resp.status_code = 400
-		return resp
-	if file and allowed_file(file.filename):
-		filename = secure_filename(file.filename)
-		file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-		resp = jsonify({'message' : 'File successfully uploaded'})
-		resp.status_code = 201
-		return resp
-	else:
-		resp = jsonify({'message' : 'Allowed file types are txt, pdf, png, jpg, jpeg, gif'})
-		resp.status_code = 400
-		return resp
+def user_fdb_find():
+    cur = conn.cursor()
+    rows = cur.execute("select uuid,originname,curname,upddate,crtdate from node").fetchall()  #rows is list
+    l = []
+    for row in rows:
+        d = dict(row.items())
+        dic= {'uuid': d['uuid'],'originname': d['originname'],'curname':d['curname'],'upddate':d['upddate'],'crtdate':d['crtdate']}
+        l.append(dic)
+    conn.commit()
+    return l
 
+@app.route('/api/u/fdb/task/1/<uuid>', methods=['GET'])
+def user_fdb_getfilename(uuid):
+    cur = conn.cursor()
+    tmp_uuid = "'"+uuid+"'"
+    rows = cur.execute("select * from node WHERE uuid = {}".format(tmp_uuid)).fetchone()
+    # print(rows,1111111111)
+    if rows != None:
+        try:
+            a = TiNodeModel(**rows)
+            dic= {'filename': a.originname}  
+            filename = a.originname
+            print(filename)
+            return filename 
+        except Exception as e:
+            print('download failed --> {}'.format(str(e)))
+            raise e
+    else:
+        return "无该文件"
+
+@app.route('/api/u/fdb/task', methods=['POST'])
+def user_fdb_findc():
+    if 'file' not in request.files:
+        resp = jsonify({'message' : 'No file part in the request'})
+        resp.status_code = 400
+        return resp
+    file = request.files['file']
+    if file.filename == '':
+        resp = jsonify({'message' : 'No file selected for uploading'})
+        resp.status_code = 400
+        return resp
+    if file and allowed_file(file.filename):
+        originname = secure_filename(file.filename)
+        curname = change_filename(originname)
+        try:
+            file.save(os.path.join(UPLOAD_FOLDER, originname))
+            file = {'originname':originname,'curname':curname}
+            nodeid = addnew(file)
+            resp = jsonify({'message' : 'File successfully uploaded','status':201,'nodeid':nodeid})
+            resp.status_code = 201
+            return resp
+        except Exception as e:
+            print('upload failed --> {}'.format(str(e)))
+            raise e
+    else:
+        resp = jsonify('Allowed file types are txt, pdf, png, jpg, jpeg, gif, doc, docx, xls, xlsx, ppt, pptx, mp4, rar')
+        resp.status_code = 400
+        return resp    if 'file' not in request.files:
+        resp = jsonify({'message' : 'No file part in the request'})
+        resp.status_code = 400
+        return resp
+    file = request.files['file']
+    if file.filename == '':
+        resp = jsonify({'message' : 'No file selected for uploading'})
+        resp.status_code = 400
+        return resp
+    if file and allowed_file(file.filename):
+        originname = secure_filename(file.filename)
+        curname = change_filename(originname)
+        try:
+            file.save(os.path.join(UPLOAD_FOLDER, originname))
+            file = {'originname':originname,'curname':curname}
+            nodeid = add(file)
+            resp = jsonify({'message' : 'File successfully uploaded','status':201,'nodeid':nodeid})
+            resp.status_code = 201
+            return resp
+        except Exception as e:
+            print('upload failed --> {}'.format(str(e)))
+            raise e
+    else:
+        resp = jsonify('Allowed file types are txt, pdf, png, jpg, jpeg, gif, doc, docx, xls, xlsx, ppt, pptx, mp4, rar')
+        resp.status_code = 400
+        return resp
+
+def add(file):
+    cur = conn.cursor()
+    now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
+    nodeid = uuid.uuid1()
+    cur.execute("insert into node(uuid, originname, curname, upddate, crtdate) values(%s,%s,%s,%s,%s)",
+            (nodeid,file['originname'], file['curname'], now, now))
+    conn.commit()
+    return nodeid
+
+@app.route('/api/u/fdb/task/<uuid>', methods=['GET'])
+def user_fdb_download(uuid):
+    try:
+        filename = get(uuid)
+        response = make_response(send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True))
+        response.headers["Content-Disposition"] = "attachment; filename={}".format(filename.encode().decode('latin-1'))
+        return response
+    except Exception as e:
+        raise e
+        return jsonify({"code": "异常", "message": "{}".format(e)})
+
+def get(uuid):
+    cur = conn.cursor()
+    tmp_uuid = "'"+uuid+"'"
+    rows = cur.execute("select * from node WHERE uuid = {}".format(tmp_uuid)).fetchone()
+    if rows != None:
+        try:
+            a = TiNodeModel(**rows)
+            dic= {'filename': a.originname}  
+            filename = a.originname
+            print(filename)
+            return filename 
+        except Exception as e:
+            print('download failed --> {}'.format(str(e)))
+            raise e
+    else:
+        return "无该文件"
+
+@app.route('/api/u/fdb/task/<uuid>', methods=['DELETE'])
+def user_fdb_delete(uuid):
+    cur = conn.cursor()
+    tmp_uuid = "'"+uuid+"'"
+    cur.execute("DELETE from node where uuid={}".format(tmp_uuid))
+    conn.commit()
+    return 1
+
+@app.route('/api/u/fdb/task/<uuid>/content', methods=['GET'])
+def user_fdb_getfile(uuid):
+    filename = get(uuid)
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+def allowed_file(filename):
+	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def change_filename(filename):
+    fileinfo = os.path.splitext(filename)
+    filename = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + str(uuid.uuid4().hex) + fileinfo[-1]
+    return filename
 # ------------------------------------------------------------------------------------------------------
 
 
@@ -731,6 +845,6 @@ def read_ecg():
 
 if __name__ == '__main__':
     # excel.init_excel(app)  ## 下载excel必须 请勿注释
-    from werkzeug.contrib.fixers import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    # from werkzeug.contrib.fixers import ProxyFix
+    # app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run()
