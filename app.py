@@ -1,6 +1,6 @@
 #coding:utf-8
 import psycopg2
-from flask import Flask, jsonify, request,send_file, send_from_directory
+from flask import Flask, jsonify, request,send_file, send_from_directory,make_response
 from flask_cors import CORS
 import uuid
 import psycopg2.extras
@@ -14,6 +14,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Date, Integer, String, text
 from sqlalchemy.ext.declarative import declarative_base
 from model import TiSecModel
+from model import TiNodeModel
+from model import TiTaskModel
 import jwt, datetime, time
 import urllib.request
 from werkzeug.utils import secure_filename
@@ -29,8 +31,8 @@ password = 'tongji2020'
 database = 'postgres'
 dd = 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, database)
 
-UPLOAD_FOLDER = 'D:/uploads'
-# UPLOAD_FOLDER = '/var/upload'
+# UPLOAD_FOLDER = 'D:/uploads'
+UPLOAD_FOLDER = '/var/upload'
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'])
 
@@ -45,6 +47,13 @@ Base = declarative_base(engine)
 Session = sessionmaker(bind=engine) 
 ss = Session() 
 
+
+# ---------------------------------------------------------------------------------------------------
+#
+#  活动 增删改查
+#
+# ---------------------------------------------------------------------------------------------------
+
 @app.route('/api/u/activity',methods=['POST'])
 def create_activity():
     psycopg2.extras.register_uuid()   
@@ -58,13 +67,12 @@ def create_activity():
     conn.commit()
     return "1"
 
+
 @app.route('/api/u/activity/<mid>',methods=['GET'])
 def read_one_activity(mid):
     cur = conn.cursor()
     tmp_mid = "'"+mid+"'"
     print(mid)
-    # cur.execute(
-    #     "select courseid from appl1011 where memberid={}".format(tmp_id))
     cur.execute(
         "select id,uuid,courseid,objectstate from appl1011 where memberid={}".format(tmp_mid))    
     rows = cur.fetchall()
@@ -89,12 +97,59 @@ def read_one_activity(mid):
         print(cour)
         l.append(cour)
         print("----------------")
-        # for i in courses:
-        #     cour = {'code':str(i[4]),'name':str(i[6]),'objectstate':int(i[18])}
-        #     print(int(i[18]))
-        #     l.append(cour)
     print(l)
     return jsonify(l)
+
+@app.route('/api/u/activity/<uuid>', methods=['DELETE'])
+def delete_act(uuid):
+    cur = conn.cursor()
+    # cur.execute("select uuid from mast1014 where name='{}'".format(name))
+    # course_uuid = cur.fetchall()
+    # print(str(course_uuid[0][0]))
+    # course_id = "'"+ str(course_uuid[0][0]) +"'"
+    tmp_uuid = "'"+uuid+"'"
+    cur.execute("DELETE from appl1011 where uuid={}".format(tmp_uuid))
+    conn.commit() 
+    return "1"
+
+
+@app.route('/api/u/activity/state/<string:id>', methods=['PUT'])
+def update_one_activity_state(id):
+    cur = conn.cursor()
+    data = request.get_json()
+    print(data)
+    cur.execute("UPDATE appl1011 SET objectstate = '{}' WHERE id = {}"
+        .format(data['state'], id))
+    conn.commit()
+    return "1"
+
+
+@app.route('/api/u/activity/<string:id>', methods=['PUT'])
+def update_one_activity(id):
+    cur = conn.cursor()
+    data = request.get_json()
+
+    cur.execute("UPDATE APPL1011 SET uuid = '{}', memberid = '{}', courseid = '{}', begintime = '{}', endtime = '{}', workday = '{}' ,workpoint = '{}' WHERE id = {}"
+        .format(data['uuid'], data['memberid'],data['courseid'],data['begintime'], data['endtime'], data['workday'], data['workpoint'], id))
+
+
+    conn.commit()
+    return "1"
+
+
+@app.route('/api/u/activity/<string:id>', methods=['DELETE'])
+def delete_one_activity(id):
+    cur = conn.cursor()
+    # cur.execute("DELETE from tasktwo where id=%s", id)
+    cur.execute("DELETE from APPL1011 where id="+ id)
+    conn.commit() 
+    return "1"
+
+# ---------------------------------------------------------------------------------------------------
+#
+#  人员 增删改查
+#
+# ------------------------------------------------------------------------------------------------------------
 
 @app.route('/api/u/member',methods=['GET'])
 def read_member():
@@ -122,6 +177,13 @@ def read_one_member(id):
         l.append(dic)
     return jsonify(l)
 
+# ---------------------------------------------------------------------------------------------------
+#
+#  课程 增删改查
+#
+# ---------------------------------------------------------------------------------------------------
+
+
 @app.route('/api/u/course',methods=['GET'])
 def read_course():
     cur = conn.cursor()
@@ -134,6 +196,7 @@ def read_course():
         dic= {'id': str(row[0]),'code': str(row[3]),'name':str(row[5]),'uuid':str(row[22]),'credit':str(row[9]),'objectstate':str(row[16])}
         l.append(dic)
     return jsonify(l)
+
 
 @app.route('/api/u/course/<id>',methods=['GET'])
 def read_one_course(id):
@@ -148,90 +211,136 @@ def read_one_course(id):
         l.append(dic)
     return jsonify(l)
 
-# @app.route('/api/u/activity/<string:name>/<memberId>', methods=['DELETE'])
-# def delete_act(name,memberId):
-#     cur = conn.cursor()
-#     cur.execute("select uuid from mast1014 where name='{}'".format(name))
-#     course_uuid = cur.fetchall()
-#     print(str(course_uuid[0][0]))
-#     course_id = "'"+ str(course_uuid[0][0]) +"'"
-#     member_id = "'"+memberId+"'"
-#     cur.execute("DELETE from appl1011 where courseid={} and memberid={}".format(course_id,member_id))
-#     conn.commit() 
-#     return "1"
 
-@app.route('/api/u/activity/<uuid>', methods=['DELETE'])
-def delete_act(uuid):
+# ---------------------------------------------------------------------------------------------------------------
+#
+# 任务 增删改查
+#
+# ---------------------------------------------------------------------------------------------------------------
+
+
+@app.route('/api/admin/task/tasks',methods=['GET'])
+def read_all_admin_tasks():
+    # cur = conn.cursor()
+    # cur.execute(
+    #     "select * from taskthree")
+    # rows = cur.fetchall()
+    # l = []
+    # for row in rows:
+    #     print(row)
+    #     dic= {'id': str(row[0]),'description': str(row[1]),'begintime':str(row[2]),'endtime':str(row[3]),'performer':str(row[4]),'state':str(row[5]),'title':str(row[6])}
+    #     l.append(dic)
+    # return jsonify(l)
+    selected_list = []
+    result = ss.query(TiTaskModel).all()
+    for i in result:
+        t = {'id':i.id,'uuid':i.uuid,'description': i.description, 'begintime':i.expbegindate,'endtime':i.expenddate,'performer':i.executorname,'title':i.title, 'state':i.objectstate,'nodeid':i.nodeid}
+        selected_list.append(t)
+    return jsonify(selected_list)
+
+
+@app.route('/api/admin/task/tasks/<string:id>',methods=['GET'])
+def read_one_admin_task(id):
     cur = conn.cursor()
-    # cur.execute("select uuid from mast1014 where name='{}'".format(name))
-    # course_uuid = cur.fetchall()
-    # print(str(course_uuid[0][0]))
-    # course_id = "'"+ str(course_uuid[0][0]) +"'"
-    tmp_uuid = "'"+uuid+"'"
-    cur.execute("DELETE from appl1011 where uuid={}".format(tmp_uuid))
-    conn.commit() 
-    return "1"
-
-@app.route('/api/u/activity/state/<string:id>', methods=['PUT'])
-def update_one_activity_state(id):
-    cur = conn.cursor()
-    data = request.get_json()
-    print(data)
-    cur.execute("UPDATE appl1011 SET objectstate = '{}' WHERE id = {}"
-        .format(data['state'], id))
+    cur.execute(
+        "select * from tran0823 where id="+id)
+    rows = cur.fetchall()
+    l = []
+    for row in rows:
+        # print(row)
+        dic= {'id': str(row[0]),'description': str(row[14]),'begintime':str(row[23]),'endtime':str(row[24]),'performer':str(row[7]),'state':str(row[18]),'title':str(row[13]),'nodeid':str(row[15])}
+        l.append(dic)
+    return jsonify(dic)    
+    # o = ss.query(TiTaskModel).get(id)
+    # ss.close()
+    # return o
 
 
-    conn.commit()
-    return "1"
 
-# 4.30 柏浩冉 注释掉
-# @app.route('/api/u/activity',methods=['GET'])
-# def read_avtivities():
-#     cur = conn.cursor()
-#     cur.execute("select APPL1011.uuid,APPL1011.category,APPL1011.memberid,APPL1011.begintime,APPL1011.endtime,APPL1011.workday,APPL1011.workpoint,MAST0501.employeeid,MAST0501.firstname,MAST0501.title,APPL1011.courseid,MAST1014.id,MAST1014.name,MAST1014.credit from APPL1011  join MAST0501 ON(APPL1011.memberid=MAST0501.uuid) join MAST1014 ON(APPL1011.courseid=MAST1014.uuid)")
-#     rows = cur.fetchall()
-#     l = []
-#     for row in rows:
-#         print(row)
-#         dic= {'uuid': str(row[2]),'employeeid': str(row[7]),'name':str(row[8]),'title':str(row[9]),'courseuuid':str(row[10]),'courseid':str(row[11]),'coursename':str(row[12]),'credit':str(row[13]),'begintime':str(row[3]),'endtime':str(row[4]),'workday':str(row[5]),'workpoint':str(row[6])}
-#         l.append(dic)
-#     print(l)
-#     return jsonify(l)
-
-
-@app.route('/api/u/activity/<string:id>', methods=['PUT'])
-def update_one_activity(id):
-    cur = conn.cursor()
-    data = request.get_json()
-
-    cur.execute("UPDATE APPL1011 SET uuid = '{}', memberid = '{}', courseid = '{}', begintime = '{}', endtime = '{}', workday = '{}' ,workpoint = '{}' WHERE id = {}"
-        .format(data['uuid'], data['memberid'],data['courseid'],data['begintime'], data['endtime'], data['workday'], data['workpoint'], id))
-
-
-    conn.commit()
-    return "1"
-
-
-@app.route('/api/u/activity/<string:id>', methods=['DELETE'])
-def delete_one_activity(id):
-    cur = conn.cursor()
-    # cur.execute("DELETE from tasktwo where id=%s", id)
-    cur.execute("DELETE from APPL1011 where id="+ id)
-    conn.commit() 
-    return "1"
-
-@app.route('/api/admin/tasks/new',methods=['POST'])
+#  select * from taskthree where begintime >=  and endtime < '2015-08-15';
+@app.route('/api/admin/task/tasks/new',methods=['POST'])
 def create_task():
-    cur = conn.cursor()
+    # cur = conn.cursor()
     data = request.get_json()
-    cur.execute("insert into taskthree(performer, description, begintime, endtime, state, title) values(%s,%s,%s,%s,%s,%s)",
-             (data['performer'], data['description'], data['begintime'], data['endtime'], data['state'], data['title']))
-    conn.commit()
+    # cur.execute("insert into taskthree(performer, description, begintime, endtime, state, title) values(%s,%s,%s,%s,%s,%s)",
+    #          (data['performer'], data['description'], data['begintime'], data['endtime'], data['state'], data['title']))
+    # conn.commit()
+    # return "1"
+    last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
+    print(last_data.uuid)
+    nodeid = last_data.uuid
+    task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title']]
+    o =TiTaskModel(uuid=uuid.uuid1(),description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
+    try:
+        ss.add(o)
+        ss.commit()
+    except Exception as e:
+        print("TiTaskService.addnew() encounter unexpected exception")
+        print(e)
+        raise e
+    else:
+        try:
+            ss.rollback()
+            ss.close()
+        except:
+            ss.rollback()
+            print('')
+    finally:
+        ss.close()
     return "1"
 
 
-@app.route('/api/admin/tasks',methods=['GET'])
-def read_all_tasks():
+@app.route('/api/admin/task/tasks/<string:title>',methods=['GET'])
+def read_one_detail(title):
+    cur = conn.cursor()
+    cur.execute(
+        "select * from taskthree where title="+title)
+    rows = cur.fetchall()
+    l = []
+    for row in rows:
+        dic= {'id': str(row[0]),'description': str(row[1]),'begintime':str(row[2]),'endtime':str(row[3]),'performer':str(row[4]),'state':str(row[5]),'title':str(row[6])}
+        l.append(dic)
+    return jsonify(dic)
+
+
+@app.route('/api/admin/task/tasks/v/<string:id>', methods=['PUT'])
+def update_one_task(id):
+    # cur = conn.cursor()
+    data = request.get_json()
+    # cur.execute("UPDATE taskthree SET performer = '{}', title = '{}', description = '{}', state = '{}', begintime = '{}', endtime = '{}'  WHERE id = {}"
+    #     .format(data['performer'],data['title'],data['description'],data['state'],data['begintime'],data['endtime'], id))
+    # conn.commit()
+    # return "1"
+    task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title'],data['nodeid'],id]
+    origin = ss.query(TiTaskModel).filter_by(id=task[-1]).first()
+    origin.description = task[0]
+    origin.expbegindate = task[1]
+    origin.expenddate = task[2]
+    origin.executorname = task[3]
+    origin.objectstate = task[4]
+    origin.title = task[5]
+    origin.nodeid = task[6]
+    ss.add(origin)
+    print('修改成功')
+    ss.commit()
+    ss.close()
+    return "1"
+
+
+@app.route('/api/admin/task/tasks/e/<string:id>', methods=['DELETE'])
+def delete_one_task(id):
+    # cur = conn.cursor()
+    # cur.execute("DELETE from taskthree where id="+ id)
+    # conn.commit() 
+    ss.query(TiTaskModel).filter(TiTaskModel.id == id).delete()
+    print('成功删除！')
+    ss.commit()
+    return "1"
+
+# ---------------------------------------------------------------------------------------------------------------
+
+@app.route('/api/anon/task/tasks',methods=['GET'])
+def read_all_anon_tasks():
     cur = conn.cursor()
     cur.execute(
         "select * from taskthree")
@@ -244,8 +353,8 @@ def read_all_tasks():
     return jsonify(l)
 
 
-@app.route('/api/admin/tasks/<string:id>',methods=['GET'])
-def read_one_task(id):
+@app.route('/api/anon/task/tasks/<string:id>',methods=['GET'])
+def read_one_anon_task(id):
     cur = conn.cursor()
     cur.execute(
         "select * from taskthree where id="+id)
@@ -255,49 +364,19 @@ def read_one_task(id):
         # print(row)
         dic= {'id': str(row[0]),'description': str(row[1]),'begintime':str(row[2]),'endtime':str(row[3]),'performer':str(row[4]),'state':str(row[5]),'title':str(row[6])}
         l.append(dic)
-    return jsonify(dic)  
-    # return jsonify(l)    
-
-#  select * from taskthree where begintime >=  and endtime < '2015-08-15';
-
-@app.route('/api/admin/tasks/<string:title>',methods=['GET'])
-def read_one_detail(title):
-    cur = conn.cursor()
-    cur.execute(
-        "select * from taskthree where title="+title)
-    rows = cur.fetchall()
-    l = []
-    for row in rows:
-        # print(row)
-        dic= {'id': str(row[0]),'description': str(row[1]),'begintime':str(row[2]),'endtime':str(row[3]),'performer':str(row[4]),'state':str(row[5]),'title':str(row[6])}
-        l.append(dic)
-    # return jsonify(l)
-    return dic
+    return jsonify(dic) 
 
 
-@app.route('/api/admin/tasks/v/<string:id>', methods=['PUT'])
-def update_one_task(id):
-    cur = conn.cursor()
-    data = request.get_json()
+# ---------------------------------------------------------------------------------------------------------------
+#
+#   用户的登录与登出
+#
+# ---------------------------------------------------------------------------------------------------------------
 
-    cur.execute("UPDATE taskthree SET performer = '{}', title = '{}', description = '{}', state = '{}', begintime = '{}', endtime = '{}'  WHERE id = {}"
-        .format(data['performer'],data['title'],data['description'],data['state'],data['begintime'],data['endtime'], id))
-    
-
-    conn.commit()
-    return "1"
-
-
-@app.route('/api/admin/tasks/e/<string:id>', methods=['DELETE'])
-def delete_one_task(id):
-    cur = conn.cursor()
-    cur.execute("DELETE from taskthree where id="+ id)
-    conn.commit() 
-    return "1"
 
 @app.route('/api/anon/login', methods=['POST'])
 def login():
-    cur = conn.cursor()
+    # cur = conn.cursor()
     data = request.get_json()
     username = data['username']
     password = data['password'] 
@@ -317,7 +396,6 @@ def login():
 
 @app.route('/api/anon/user/info', methods=['GET'])
 def get_info():
-    
     # auth_header = request.headers.get('Authorization')
     # print(auth_header,"请求头")    
     result = identify(request)  #ok
@@ -458,31 +536,41 @@ def falseReturn(data, msg):
         "token": data,
         "msg": msg
     }
-# ------------------------------------------------------------------------------------------------------
 
-@app.route('/api/u/fdb/task', methods=['POST'])
+# ------------------------------------------------------------------------------------------------------
+#
+#  文件的上传下载
+#
+# ---------------------------------------------------------------------------------------------------------------
+
+
+@app.route('/api/u/fdb/task', methods=['GET'])
 def user_fdb_find():
     cur = conn.cursor()
-    rows = cur.execute("select uuid,originname,curname,upddate,crtdate from node").fetchall()  #rows is list
+    cur.execute("select uuid,originname,curname,upddate,crtdate from node")  #rows is list
+    rows = cur.fetchall()
     l = []
     for row in rows:
-        d = dict(row.items())
-        dic= {'uuid': d['uuid'],'originname': d['originname'],'curname':d['curname'],'upddate':d['upddate'],'crtdate':d['crtdate']}
+        # d = dict(row.items())
+        dic= {'uuid': str(row[0]),'originname': str(row[1]),'curname':str(row[2]),'upddate':str(row[3]),'crtdate':str(row[4])}
         l.append(dic)
     conn.commit()
-    return l
+    return jsonify(l)
+
 
 @app.route('/api/u/fdb/task/1/<uuid>', methods=['GET'])
 def user_fdb_getfilename(uuid):
     cur = conn.cursor()
     tmp_uuid = "'"+uuid+"'"
-    rows = cur.execute("select * from node WHERE uuid = {}".format(tmp_uuid)).fetchone()
+    cur.execute("select * from node WHERE uuid = {}".format(tmp_uuid))
+    rows = cur.fetchone()
     # print(rows,1111111111)
     if rows != None:
         try:
-            a = TiNodeModel(**rows)
-            dic= {'filename': a.originname}  
-            filename = a.originname
+            # a = TiNodeModel(**rows)
+            # dic= {'filename': a.originname}  
+            filename = rows[6]
+            # filename = a.originname
             print(filename)
             return filename 
         except Exception as e:
@@ -492,7 +580,7 @@ def user_fdb_getfilename(uuid):
         return "无该文件"
 
 @app.route('/api/u/fdb/task', methods=['POST'])
-def user_fdb_findc():
+def user_fdb_uploadinto():
     if 'file' not in request.files:
         resp = jsonify({'message' : 'No file part in the request'})
         resp.status_code = 400
@@ -518,34 +606,9 @@ def user_fdb_findc():
     else:
         resp = jsonify('Allowed file types are txt, pdf, png, jpg, jpeg, gif, doc, docx, xls, xlsx, ppt, pptx, mp4, rar')
         resp.status_code = 400
-        return resp    if 'file' not in request.files:
-        resp = jsonify({'message' : 'No file part in the request'})
-        resp.status_code = 400
-        return resp
-    file = request.files['file']
-    if file.filename == '':
-        resp = jsonify({'message' : 'No file selected for uploading'})
-        resp.status_code = 400
-        return resp
-    if file and allowed_file(file.filename):
-        originname = secure_filename(file.filename)
-        curname = change_filename(originname)
-        try:
-            file.save(os.path.join(UPLOAD_FOLDER, originname))
-            file = {'originname':originname,'curname':curname}
-            nodeid = add(file)
-            resp = jsonify({'message' : 'File successfully uploaded','status':201,'nodeid':nodeid})
-            resp.status_code = 201
-            return resp
-        except Exception as e:
-            print('upload failed --> {}'.format(str(e)))
-            raise e
-    else:
-        resp = jsonify('Allowed file types are txt, pdf, png, jpg, jpeg, gif, doc, docx, xls, xlsx, ppt, pptx, mp4, rar')
-        resp.status_code = 400
-        return resp
+        return resp    
 
-def add(file):
+def addnew(file):
     cur = conn.cursor()
     now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
     nodeid = uuid.uuid1()
@@ -563,17 +626,19 @@ def user_fdb_download(uuid):
         return response
     except Exception as e:
         raise e
-        return jsonify({"code": "异常", "message": "{}".format(e)})
+    return jsonify({"code": "异常", "message": "{}".format(e)})
 
 def get(uuid):
     cur = conn.cursor()
     tmp_uuid = "'"+uuid+"'"
-    rows = cur.execute("select * from node WHERE uuid = {}".format(tmp_uuid)).fetchone()
+    cur.execute("select * from node WHERE uuid = {}".format(tmp_uuid))
+    rows = cur.fetchone()
     if rows != None:
         try:
-            a = TiNodeModel(**rows)
-            dic= {'filename': a.originname}  
-            filename = a.originname
+            # a = TiNodeModel(**rows)
+            # dic= {'filename': a.originname}  
+            # filename = a.originname
+            filename = rows[6]
             print(filename)
             return filename 
         except Exception as e:
@@ -588,7 +653,7 @@ def user_fdb_delete(uuid):
     tmp_uuid = "'"+uuid+"'"
     cur.execute("DELETE from node where uuid={}".format(tmp_uuid))
     conn.commit()
-    return 1
+    return "1"
 
 @app.route('/api/u/fdb/task/<uuid>/content', methods=['GET'])
 def user_fdb_getfile(uuid):
@@ -602,6 +667,7 @@ def change_filename(filename):
     fileinfo = os.path.splitext(filename)
     filename = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + str(uuid.uuid4().hex) + fileinfo[-1]
     return filename
+# ------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------
 
 
@@ -845,6 +911,6 @@ def read_ecg():
 
 if __name__ == '__main__':
     # excel.init_excel(app)  ## 下载excel必须 请勿注释
-    # from werkzeug.contrib.fixers import ProxyFix
-    # app.wsgi_app = ProxyFix(app.wsgi_app)
+    from werkzeug.contrib.fixers import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run()
