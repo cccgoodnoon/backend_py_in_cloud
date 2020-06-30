@@ -31,8 +31,8 @@ password = 'tongji2020'
 database = 'postgres'
 dd = 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, database)
 
-# UPLOAD_FOLDER = 'D:/uploads'
-UPLOAD_FOLDER = '/var/upload'
+UPLOAD_FOLDER = 'D:/uploads'
+# UPLOAD_FOLDER = '/var/upload'
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'])
 
@@ -234,7 +234,9 @@ def read_all_admin_tasks():
     selected_list = []
     result = ss.query(TiTaskModel).all()
     for i in result:
-        t = {'id':i.id,'uuid':i.uuid,'description': i.description, 'begintime':i.expbegindate,'endtime':i.expenddate,'performer':i.executorname,'title':i.title, 'state':i.objectstate,'nodeid':i.nodeid}
+        expbegindate = i.expbegindate.strftime('%Y-%m-%d')
+        expenddate = i.expenddate.strftime('%Y-%m-%d')
+        t = {'id':i.id,'uuid':i.uuid,'description': i.description, 'begintime':expbegindate,'endtime':expenddate,'performer':i.executorname,'title':i.title, 'state':i.objectstate,'nodeid':i.nodeid}
         selected_list.append(t)
     return jsonify(selected_list)
 
@@ -266,11 +268,15 @@ def create_task():
     #          (data['performer'], data['description'], data['begintime'], data['endtime'], data['state'], data['title']))
     # conn.commit()
     # return "1"
-    last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
-    print(last_data.uuid)
-    nodeid = last_data.uuid
+    print(data)
     task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title']]
-    o =TiTaskModel(uuid=uuid.uuid1(),description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
+    if data['isFile']== 1:
+        last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
+        print(last_data.uuid)
+        nodeid = last_data.uuid
+        o =TiTaskModel(uuid=uuid.uuid1(),description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
+    if data['isFile']== 0:
+        o =TiTaskModel(uuid=uuid.uuid1(),description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5])
     try:
         ss.add(o)
         ss.commit()
@@ -577,7 +583,7 @@ def user_fdb_getfilename(uuid):
             print('download failed --> {}'.format(str(e)))
             raise e
     else:
-        return "无该文件"
+        return "没有附件"
 
 @app.route('/api/u/fdb/task', methods=['POST'])
 def user_fdb_uploadinto():
@@ -645,7 +651,7 @@ def get(uuid):
             print('download failed --> {}'.format(str(e)))
             raise e
     else:
-        return "无该文件"
+        return "没有附件"
 
 @app.route('/api/u/fdb/task/<uuid>', methods=['DELETE'])
 def user_fdb_delete(uuid):
@@ -911,6 +917,6 @@ def read_ecg():
 
 if __name__ == '__main__':
     # excel.init_excel(app)  ## 下载excel必须 请勿注释
-    from werkzeug.contrib.fixers import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    # from werkzeug.contrib.fixers import ProxyFix
+    # app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run()
