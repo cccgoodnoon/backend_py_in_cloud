@@ -1,6 +1,6 @@
 #coding:utf-8
 import psycopg2
-from flask import Flask, jsonify, request,send_file, send_from_directory,make_response
+from flask import Flask, jsonify, request,send_file, send_from_directory,make_response,Response,json
 from flask_cors import CORS
 import uuid
 import psycopg2.extras
@@ -237,8 +237,10 @@ def read_all_admin_tasks():
         expbegindate = i.expbegindate.strftime('%Y-%m-%d')
         expenddate = i.expenddate.strftime('%Y-%m-%d')
         t = {'id':i.id,'uuid':i.uuid,'description': i.description, 'begintime':expbegindate,'endtime':expenddate,'performer':i.executorname,'title':i.title, 'state':i.objectstate,'nodeid':i.nodeid}
+        # nodeid 是 parent ,传到前端
         selected_list.append(t)
-    return jsonify(selected_list)
+    # return jsonify(selected_list)
+    return Response(json.dumps(selected_list),mimetype='application/json')
 
 
 @app.route('/api/admin/task/tasks/<string:id>',methods=['GET'])
@@ -262,21 +264,17 @@ def read_one_admin_task(id):
 #  select * from taskthree where begintime >=  and endtime < '2015-08-15';
 @app.route('/api/admin/task/tasks/new',methods=['POST'])
 def create_task():
-    # cur = conn.cursor()
     data = request.get_json()
-    # cur.execute("insert into taskthree(performer, description, begintime, endtime, state, title) values(%s,%s,%s,%s,%s,%s)",
-    #          (data['performer'], data['description'], data['begintime'], data['endtime'], data['state'], data['title']))
-    # conn.commit()
-    # return "1"
     print(data)
+    task_uuid = uuid.uuid1()
     task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title']]
     if data['isFile']== 1:
         last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
         print(last_data.uuid)
         nodeid = last_data.uuid
-        o =TiTaskModel(uuid=uuid.uuid1(),description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
+        o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
     if data['isFile']== 0:
-        o =TiTaskModel(uuid=uuid.uuid1(),description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5])
+        o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5])
     try:
         ss.add(o)
         ss.commit()
@@ -293,7 +291,37 @@ def create_task():
             print('')
     finally:
         ss.close()
-    return "1"
+    return task_uuid   
+
+# def create_task():
+#     data = request.get_json()
+#     print(data)
+#     task_uuid = uuid.uuid1()
+#     task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title']]
+#     if data['isFile']== 1:
+#         last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
+#         print(last_data.uuid)
+#         nodeid = last_data.uuid
+#         o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
+#     if data['isFile']== 0:
+#         o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5])
+#     try:
+#         ss.add(o)
+#         ss.commit()
+#     except Exception as e:
+#         print("TiTaskService.addnew() encounter unexpected exception")
+#         print(e)
+#         raise e
+#     else:
+#         try:
+#             ss.rollback()
+#             ss.close()
+#         except:
+#             ss.rollback()
+#             print('')
+#     finally:
+#         ss.close()
+#     return "1"
 
 
 @app.route('/api/admin/task/tasks/<string:title>',methods=['GET'])
@@ -317,15 +345,19 @@ def update_one_task(id):
     #     .format(data['performer'],data['title'],data['description'],data['state'],data['begintime'],data['endtime'], id))
     # conn.commit()
     # return "1"
-    task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title'],data['nodeid'],id]
-    origin = ss.query(TiTaskModel).filter_by(id=task[-1]).first()
+    if data['nodeid'] == 'None':
+        task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title'],id]
+        origin = ss.query(TiTaskModel).filter_by(id=task[-1]).first()
+    else:
+        task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title'],data['nodeid'],id]
+        origin = ss.query(TiTaskModel).filter_by(id=task[-1]).first()
+        origin.nodeid = task[6]
     origin.description = task[0]
     origin.expbegindate = task[1]
     origin.expenddate = task[2]
     origin.executorname = task[3]
     origin.objectstate = task[4]
     origin.title = task[5]
-    origin.nodeid = task[6]
     ss.add(origin)
     print('修改成功')
     ss.commit()
@@ -602,7 +634,7 @@ def user_fdb_uploadinto():
         try:
             file.save(os.path.join(UPLOAD_FOLDER, originname))
             file = {'originname':originname,'curname':curname}
-            nodeid = addnew(file)
+            nodeid = addnew(file)   #addnew nodeid
             resp = jsonify({'message' : 'File successfully uploaded','status':201,'nodeid':nodeid})
             resp.status_code = 201
             return resp
@@ -614,12 +646,66 @@ def user_fdb_uploadinto():
         resp.status_code = 400
         return resp    
 
+@app.route('/api/u/fdb/m/task', methods=['POST'])
+def user_multi_fdb_upload():
+	if 'file' not in request.files:
+		resp = jsonify({'message' : 'No file part in the request'})
+		resp.status_code = 400
+		return resp
+	files = request.files.getlist('file')
+	print(files,111)
+	print('file',222)
+	errors = {}
+	success = False
+	# parentid = uuid.uuid1()
+	# print(parentid,type(parentid))
+	parent = str(uuid.uuid1() ).replace("-", "")
+	# parent ="parentid"
+	print(parent,"parent",type(parent),663)
+	for file in files:		
+		if file and allowed_file(file.filename):
+			originname = secure_filename(file.filename)
+			curname = change_filename(originname)
+			file.save(os.path.join(UPLOAD_FOLDER, originname))
+			
+			file = {'originname':originname,'curname':curname,'parent':parent}
+			children =[]
+			file_nodeid = addmulti(file) #新增两条node表数据
+			children.append(file_nodeid)
+			print(children)
+			success = True
+		else:
+			errors[file.filename] = 'File type is not allowed'
+	if success and errors:
+		errors['message'] = 'File(s) successfully uploaded'
+		resp = jsonify(errors)
+		resp.status_code = 500
+		return resp
+	if success:
+		resp = jsonify({'message' : 'Files successfully uploaded','status':201,'nodeid':children})
+		resp.status_code = 201
+		return resp
+	else:
+		resp = jsonify(errors)
+		resp.status_code = 500
+		return resp
+
 def addnew(file):
     cur = conn.cursor()
     now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
     nodeid = uuid.uuid1()
     cur.execute("insert into node(uuid, originname, curname, upddate, crtdate) values(%s,%s,%s,%s,%s)",
             (nodeid,file['originname'], file['curname'], now, now))
+    conn.commit()
+    return nodeid
+
+def addmulti(file):
+    cur = conn.cursor()
+    now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
+    nodeid = uuid.uuid1()
+    children = str(nodeid)
+    cur.execute("insert into node(uuid, originname, curname, parent, upddate, crtdate, children) values(%s,%s,%s,%s,%s,%s,%s)",
+            (nodeid,file['originname'], file['curname'], file['parent'], now, now, children))
     conn.commit()
     return nodeid
 
