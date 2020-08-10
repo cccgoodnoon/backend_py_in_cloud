@@ -3,7 +3,8 @@
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
-from sqlalchemy import CHAR, Column, DateTime, Float, Integer, JSON, SmallInteger, String, text, Date, Boolean, BigInteger, Text, ARRAY
+from sqlalchemy import CHAR, Column, DateTime, Float, Integer, JSON, SmallInteger, String, text, Date, Boolean, \
+    BigInteger, Text, ARRAY
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 import random
@@ -17,7 +18,7 @@ class TiSecModel(BaseModel):
     __tablename__ = 'tbuser'
 
     id = Column('id', Integer, primary_key=True, nullable=True)
-    username = Column('username', String(64),unique=True, nullable=True)
+    username = Column('username', String(64), unique=True, nullable=True)
     password = Column('password', String(250), nullable=True)
     login_time = Column(Integer)
 
@@ -44,7 +45,7 @@ class TiSecModel(BaseModel):
     # crtuser = Column(Integer)
     # crtdate = Column(DateTime)
     # login_time = Column(Integer)
-    
+
     def __init__(self, username, password):
         self.username = username
         self.password = password
@@ -61,14 +62,13 @@ class TiSecModel(BaseModel):
         return check_password_hash(hash, password)
 
 
-
 class TiNodeModel(BaseModel):
     """description of class"""
 
     __tablename__ = 'node'
 
     uuid = Column('uuid', UUID, nullable=False)
-    code = Column('code',String(256))
+    code = Column('code', String(256))
     owner = Column('owner', Integer, nullable=False, server_default=text("0"))
     caption = Column('caption', String(128))
     content = Column('content', Text)
@@ -76,31 +76,30 @@ class TiNodeModel(BaseModel):
     originname = Column('originname', String(255))
     curname = Column('curname', String(255))
     appid = Column('appid', Integer, nullable=False, server_default=text("0"))
-    nodetype=Column('nodetype', SmallInteger, nullable=False, server_default=text("0"))
-    contenttype=Column('contenttype', String(8), server_default=text("unknown::character varying"))
-    template=Column('template', String(32))
-    attributes=Column('attributes', Integer, nullable=False, server_default=text("0"))
-    weight=Column('weight', SmallInteger, nullable=False, server_default=text("0"))
-    size=Column('size', Integer, nullable=False, server_default=text("0"))
-    objectstate=Column('objectstate', SmallInteger)
-    rowstate=Column('rowstate', SmallInteger, nullable=False, server_default=text("0"))
-    upddate=Column('upddate', DateTime, nullable=False)
-    crtdate=Column('crtdate', DateTime, nullable=False)
-    children=Column('children', ARRAY(String(length=256)))
-    properties=Column('properties', JSON)
-    upduser=Column('upduser', String(128))
-    crtuser=Column('crtuser', String(128))
-    attachment=Column('attachment', ARRAY(String(length=128)))
-    titlepicture=Column('titlepicture', String(128))
-    parent=Column('parent', ARRAY(String(length=256)))
-    level=Column('level', Integer)
-    id=Column('id', Integer,  primary_key=True, nullable=False, server_default=text("nextval('node_id_seq'::regclass)"))
+    nodetype = Column('nodetype', SmallInteger, nullable=False, server_default=text("0"))
+    contenttype = Column('contenttype', String(8), server_default=text("0"))
+    template = Column('template', String(32))
+    attributes = Column('attributes', Integer, nullable=False, server_default=text("0"))
+    weight = Column('weight', SmallInteger, nullable=False, server_default=text("0"))
+    size = Column('size', Integer, nullable=False, server_default=text("0"))
+    objectstate = Column('objectstate', SmallInteger)
+    rowstate = Column('rowstate', SmallInteger, nullable=False, server_default=text("0"))
+    upddate = Column('upddate', DateTime, nullable=False)
+    crtdate = Column('crtdate', DateTime, nullable=False)
+    children = Column('children', ARRAY(String(length=256)))
+    properties = Column('properties', JSON)
+    upduser = Column('upduser', String(128))
+    crtuser = Column('crtuser', String(128))
+    attachment = Column('attachment', ARRAY(String(length=128)))
+    titlepicture = Column('titlepicture', String(128))
+    parent = Column('parent', ARRAY(String(length=256)))
+    level = Column('level', Integer)
+    id = Column('id', Integer, primary_key=True, nullable=False,
+                server_default=text("nextval('node_id_seq'::regclass)"))
 
     def __init__(self):
         self.id = ''
         self.rowstate = ''
-
-
 
 
 class TiTaskModel(BaseModel):
@@ -152,10 +151,15 @@ class TiTaskModel(BaseModel):
     evaluatelevel = Column(SmallInteger, nullable=False, server_default=text("1"))
     evaluation = Column(String(2048))
 
-
-
-
-
-
-
 # sqlacodegen --tables taskthree "postgresql://postgres:postgres@47.111.234.116:5432/postgres" >tmp.py
+
+engine = create_engine(
+        'postgresql+psycopg2://postgres:tongji2020@47.111.234.116:5432/postgres',
+        max_overflow=2,  # 超过连接池大小外最多创建的数量,
+        pool_size=5,  # 连接池的大小
+        pool_timeout=30,  # 池中没有线程最多等待的时间
+        pool_recycle=-1,  # 多久之后对线程中的线程进行一次连接的回收(重置)
+
+    )
+
+BaseModel.metadata.create_all(engine)
