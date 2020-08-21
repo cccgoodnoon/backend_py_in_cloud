@@ -442,33 +442,55 @@ def delete_one_task(id):
 
 @app.route('/api/anon/task/tasks', methods=['GET'])
 def read_all_anon_tasks():
-    cur = conn.cursor()
-    cur.execute(
-        "select * from taskthree")
-    rows = cur.fetchall()
-    l = []
-    for row in rows:
-        print(row)
-        dic = {'id': str(row[0]), 'description': str(row[1]), 'begintime': str(row[2]), 'endtime': str(row[3]),
-               'performer': str(row[4]), 'state': str(row[5]), 'title': str(row[6])}
-        l.append(dic)
-    return jsonify(l)
+    # cur = conn.cursor()
+    # cur.execute(
+    #     "select * from taskthree")
+    # rows = cur.fetchall()
+    # l = []
+    # for row in rows:
+    #     print(row)
+    #     dic = {'id': str(row[0]), 'description': str(row[1]), 'begintime': str(row[2]), 'endtime': str(row[3]),
+    #            'performer': str(row[4]), 'state': str(row[5]), 'title': str(row[6])}
+    #     l.append(dic)
+    # return jsonify(l)
+
+    selected_list = []
+    result = ss.query(TiTaskModel).all()
+    for i in result:
+        expbegindate = i.expbegindate.strftime('%Y-%m-%d')
+        expenddate = i.expenddate.strftime('%Y-%m-%d')
+        t = {'id': i.id, 'uuid': i.uuid, 'description': i.description, 'begintime': expbegindate, 'endtime': expenddate,
+             'performer': i.executorname, 'title': i.title, 'state': i.objectstate, 'nodeid': i.nodeid}
+        # nodeid 是 parent ,传到前端
+        selected_list.append(t)
+    # return jsonify(selected_list)
+    return Response(json.dumps(selected_list), mimetype='application/json')
 
 
 @app.route('/api/anon/task/tasks/<string:id>', methods=['GET'])
 def read_one_anon_task(id):
+    # cur = conn.cursor()
+    # cur.execute(
+    #     "select * from taskthree where id=" + id)
+    # rows = cur.fetchall()
+    # l = []
+    # for row in rows:
+    #     # print(row)
+    #     dic = {'id': str(row[0]), 'description': str(row[1]), 'begintime': str(row[2]), 'endtime': str(row[3]),
+    #            'performer': str(row[4]), 'state': str(row[5]), 'title': str(row[6])}
+    #     l.append(dic)
+    # return jsonify(dic)
     cur = conn.cursor()
     cur.execute(
-        "select * from taskthree where id=" + id)
+        "select * from tran0823 where id=" + id)
     rows = cur.fetchall()
     l = []
     for row in rows:
         # print(row)
-        dic = {'id': str(row[0]), 'description': str(row[1]), 'begintime': str(row[2]), 'endtime': str(row[3]),
-               'performer': str(row[4]), 'state': str(row[5]), 'title': str(row[6])}
+        dic = {'id': str(row[0]), 'description': str(row[14]), 'begintime': str(row[23]), 'endtime': str(row[24]),
+               'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15])}
         l.append(dic)
     return jsonify(dic)
-
 
 # ---------------------------------------------------------------------------------------------------------------
 #
