@@ -28,21 +28,25 @@ app.config['SECRET_KEY'] = '123456'
 
 CORS(app)
 
-host = '47.111.234.116'
+host = '202.120.167.50'
+#host = '47.111.234.116'
 port = '5432'
 username = 'postgres'
-password = 'tongji2020'
+#password = 'tongji2020'
+password = 'tongji2018openedu'
 database = 'postgres'
 dd = 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, database)
 
-UPLOAD_FOLDER = 'D:/uploads'
-# UPLOAD_FOLDER = '/var/upload'
+# UPLOAD_FOLDER = 'D:/uploads'
+UPLOAD_FOLDER = '/var/upload'
 
 ALLOWED_EXTENSIONS = set(
     ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'])
 
 conn = psycopg2.connect(
-    database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+    # database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+    database="postgres", user="postgres", password="tongji2018openedu", host="202.120.167.50", port="5432")
+
 
 
 engine = create_engine(dd)
@@ -366,7 +370,8 @@ def create_task():
 def read_one_detail(title):
     cur = conn.cursor()
     cur.execute(
-        "select * from taskthree where title=" + title)
+        "select * from tran823 where title=" + title)
+        # "select * from taskthree where title=" + title)
     rows = cur.fetchall()
     l = []
     for row in rows:
@@ -978,7 +983,7 @@ def change_filename(filename):
 @app.route('/api/u/activity', methods=['GET'])
 def read_avtivities():
     conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+        database="postgres", user="postgres", password="tongji2018openedu", host="202.120.167.50", port="5432")
     cur = conn.cursor()
     cur.execute(
         "select APPL1011.uuid,APPL1011.category,APPL1011.memberid,APPL1011.begintime,APPL1011.endtime,APPL1011.workday,APPL1011.workpoint,MAST0501.employeeid,MAST0501.firstname,MAST0501.title,APPL1011.courseid,MAST1014.code,MAST1014.name,MAST1014.credit,APPL1011.objectstate from APPL1011  join MAST0501 ON(APPL1011.memberid=MAST0501.uuid) join MAST1014 ON(APPL1011.courseid=MAST1014.uuid)")
@@ -1006,7 +1011,7 @@ def read_avtivities():
 @app.route("/api/u/export/report2", methods=['GET'])
 def export_records2():
     conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+        database="postgres", user="postgres", password="tongji2018openedu", host="202.120.167.50", port="5432")
     cur = conn.cursor()
     sq1 = "select uuid,id,employeeid,firstname from mast0501"
     sq2 = "select courseid from appl1011 where memberid={} and objectstate='3'"
@@ -1060,7 +1065,7 @@ def export_records2():
 @app.route("/api/u/export/report3", methods=['GET'])
 def export_records3():
     conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
     cur = conn.cursor()
     sq1 = "select uuid,code,name from mast1014"
     sq2 = "select memberid from appl1011 where courseid={} and objectstate='3'"
@@ -1112,7 +1117,8 @@ def export_records3():
 @app.route('/api/u/activity/coursename/<string:name>', methods=['GET'])
 def read_activity_by_coursename(name):
     conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
+        # database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
     cur = conn.cursor()
     tmp_name = "'" + name + "'"
     cur.execute(
@@ -1144,7 +1150,8 @@ def read_activity_by_coursename(name):
 @app.route('/api/u/activity/membername/<string:name>', methods=['GET'])
 def read_activity_by_membername(name):
     conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
+        # database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
     cur = conn.cursor()
     tmp_name = "'" + name + "'"
     cur.execute(
@@ -1186,7 +1193,8 @@ def read_activity_test():
 @app.route('/api/u/node', methods=['GET'])
 def read_node():
     conn = psycopg2.connect(
-        database="dm365", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
+        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
+        # database="dm365", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
     cur = conn.cursor()
     cur.execute("select uuid,originname,curname,upddate,crtdate from node")
     rows = cur.fetchall()
@@ -1220,6 +1228,6 @@ def read_ecg():
 
 if __name__ == '__main__':
     # excel.init_excel(app)  ## 下载excel必须 请勿注释
-    # from werkzeug.contrib.fixers import ProxyFix
-    # app.wsgi_app = ProxyFix(app.wsgi_app)
+    from werkzeug.contrib.fixers import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run()

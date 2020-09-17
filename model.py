@@ -154,7 +154,8 @@ class TiTaskModel(BaseModel):
 # sqlacodegen --tables taskthree "postgresql://postgres:postgres@47.111.234.116:5432/postgres" >tmp.py
 
 engine = create_engine(
-        'postgresql+psycopg2://postgres:tongji2020@47.111.234.116:5432/postgres',
+        'postgresql+psycopg2://postgres:tongji2018openedu@202.120.167.50:5432/postgres',
+        # 'postgresql+psycopg2://postgres:tongji2020@47.111.234.116:5432/postgres',
         max_overflow=2,  # 超过连接池大小外最多创建的数量,
         pool_size=5,  # 连接池的大小
         pool_timeout=30,  # 池中没有线程最多等待的时间
