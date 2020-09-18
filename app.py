@@ -7,7 +7,7 @@ import psycopg2.extras
 import flask_excel as excel
 from pyexcel_xlsx import save_data
 import os
-import pandas as pd
+# import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, func
 from sqlalchemy.dialects.postgresql import Any
 from sqlalchemy.ext.declarative import declarative_base
@@ -18,7 +18,7 @@ from model import TiSecModel
 from model import TiNodeModel
 from model import TiTaskModel
 import jwt, datetime, time
-import urllib.request
+# import urllib.request
 from werkzeug.utils import secure_filename
 
 SECRET_KEY = "users"
@@ -1212,18 +1212,18 @@ def read_node():
     return jsonify(l)
 
 
-@app.route('/api/u/ecg', methods=['GET'])
-def read_ecg():
-    f = open('G:\\迅雷下载\\samples.csv')
-    # res = pd.read_csv(f)
-    data = pd.read_csv(f, header=1)
-    data2 = data.values[0:100]
-    dic = {}
-    for i in range(len(data2)):
-        data2[i][0] = data2[i][0][2:14]
-    dic['date'] = data2[..., 0].tolist()
-    dic['uv'] = data2[..., 1].tolist()
-    return jsonify(dic)
+# @app.route('/api/u/ecg', methods=['GET'])
+# def read_ecg():
+#     f = open('G:\\迅雷下载\\samples.csv')
+#     # res = pd.read_csv(f)
+#     data = pd.read_csv(f, header=1)
+#     data2 = data.values[0:100]
+#     dic = {}
+#     for i in range(len(data2)):
+#         data2[i][0] = data2[i][0][2:14]
+#     dic['date'] = data2[..., 0].tolist()
+#     dic['uv'] = data2[..., 1].tolist()
+#     return jsonify(dic)
 
 
 if __name__ == '__main__':
