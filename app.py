@@ -38,7 +38,7 @@ database = 'postgres'
 dd = 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, database)
 
 # UPLOAD_FOLDER = 'D:/uploads'
-UPLOAD_FOLDER = '/var/upload'
+UPLOAD_FOLDER = '/root/var/upload'
 
 ALLOWED_EXTENSIONS = set(
     ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'])
