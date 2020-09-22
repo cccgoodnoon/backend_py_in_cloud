@@ -1,6 +1,6 @@
 # coding:utf-8
 import psycopg2
-from flask import Flask, jsonify, request, send_file, send_from_directory, make_response, Response, json, session
+from flask import Flask, jsonify, request, send_file, send_from_directory, make_response, Response, json, session,abort
 from flask_cors import CORS
 import uuid
 import psycopg2.extras
@@ -257,7 +257,7 @@ def read_one_admin_task(id):
     l = []
     for row in rows:
         dic = {'id': str(row[0]), 'description': str(row[14]), 'begintime': str(row[23]), 'endtime': str(row[24]),
-               'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15])}
+               'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15]),'categoryid': str(row[4])}
         l.append(dic)
     return jsonify(dic)
 
@@ -292,11 +292,11 @@ def create_task():
     if (data['begintime'] == '' or data['endtime'] == ''):
         o = TiTaskModel(uuid=task_uuid, description=data['description'], expbegindate=now,
                             expenddate=now, executorname=data['performer'], objectstate=data['state'],
-                            title=data['title'], nodeid=task_uuid, parentid=task_uuid)
+                            title=data['title'], nodeid=task_uuid, parentid=task_uuid, categoryid=data['categoryid'])
     else:
         o = TiTaskModel(uuid=task_uuid, description=data['description'], expbegindate=data['begintime'],
                         expenddate=data['endtime'], executorname=data['performer'], objectstate=data['state'],
-                        title=data['title'], nodeid=task_uuid, parentid=task_uuid)
+                        title=data['title'], nodeid=task_uuid, parentid=task_uuid, categoryid=data['categoryid'])
     try:
         print("任务提交到数据库执行")
         ss.add(o)
@@ -463,18 +463,18 @@ def login():
     print(password, '密码')
     result = ss.query(TiSecModel).filter(TiSecModel.username == username).first()
     print(result,111)
-    print(TiSecModel.check_password(TiSecModel, result.password, password),222)
-    if (TiSecModel.check_password(TiSecModel, result.password, password)):
-        if (result == None):
-            print("出错")
-            return "出错"
-        else:
-            print("进入登录")
-            if (not username or not password):
-                return falseReturn('', '用户名和密码不能为空')
-            else:
-                return authenticate(username, password)
-    return "1"
+    # print(TiSecModel.check_password(TiSecModel, result.password, password),222)
+    # if (TiSecModel.check_password(TiSecModel, result.password, password)):
+    if (result == None):
+        print("出错")
+        abort(404)
+    else:
+        print("进入登录")
+        # if (password):
+        #     return falseReturn('', '用户名和密码不能为空')
+        # else:
+        return authenticate(username, password)
+    # return "1"
 
 
 @app.route('/api/anon/user/info', methods=['GET'])
@@ -508,23 +508,37 @@ def authenticate(username, password):
     :return: json
     """
     try:
-        userInfo = ss.query(TiSecModel).filter(TiSecModel.username == username).first()
+        userInfo = ss.query(TiSecModel).filter(username == TiSecModel.username).first()
         print(userInfo)
+        print("验证用户身份信息")
     except:
         return "登录失败"
     if (userInfo is None):
         return falseReturn('', '找不到用户')
     else:
+        # if (TiSecModel.check_password(TiSecModel, userInfo.password, password)):
+        print(userInfo.password,"mima")
+        print(TiSecModel.check_password(TiSecModel, userInfo.password, password),"hashjiemi")
         if (TiSecModel.check_password(TiSecModel, userInfo.password, password)):
+            
             login_time = int(time.time())
             user = userInfo
+            # print(user,"数据库里的表？")
             user.login_time = login_time
             # self.ss.add(user)
             ss.commit()
             token = encode_auth_token(userInfo.id, login_time)
             # token = self.encode_auth_token(userInfo.id)
-
-            return trueReturn(token.decode(), '登录成功')
+            returnUser = {
+                'id': user.id,
+                'username': user.username,
+                'securitylevel':user.securitylevel,
+                'token': token.decode()
+                # 'login_time': user.login_time
+            }
+            print(returnUser,11111111111111111111111)
+            # return trueReturn(token.decode(), '登录成功')
+            return trueReturn(returnUser, '登录成功')
         else:
             return falseReturn('', '密码不正确')
 
