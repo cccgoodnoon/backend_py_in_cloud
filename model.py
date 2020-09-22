@@ -15,36 +15,37 @@ BaseModel = declarative_base()
 
 class TiSecModel(BaseModel):
     # __tablename__ = 'tempuser'
-    __tablename__ = 'tbuser'
+    # __tablename__ = 'user'
 
-    id = Column('id', Integer, primary_key=True, nullable=True)
-    username = Column('username', String(64), unique=True, nullable=True)
-    password = Column('password', String(250), nullable=True)
-    login_time = Column(Integer)
-
-    # __tablename__ = 'syst1011'
-
-    # id = Column(Integer, primary_key=True, server_default=text("nextval('syst10111_id_seq'::regclass)"))
-    # uuid = Column(UUID)
-    # code = Column(String(64))
-    # username = Column(String(14))
-    # email = Column(String(64))
-    # password = Column(String(256), nullable=False)
-    # wxopenid = Column(String(256))
-    # wxunionid = Column(String(256))
-    # objectstate = Column(SmallInteger, nullable=False, server_default=text("1"))
-    # securitylevel = Column(SmallInteger, nullable=False, server_default=text("0"))
-    # expireon = Column(DateTime)
-    # securityquestions = Column(String(256))
-    # securityanswers = Column(String(256))
-    # rowstate = Column(SmallInteger, nullable=False, server_default=text("1"))
-    # verifycode = Column(String)
-    # verifyexpiretime = Column(DateTime)
-    # upduser = Column(Integer)
-    # upddate = Column(DateTime)
-    # crtuser = Column(Integer)
-    # crtdate = Column(DateTime)
+    # id = Column('id', Integer, primary_key=True, nullable=True)
+    # username = Column('username', String(64), unique=True, nullable=True)
+    # password = Column('password', String(250), nullable=True)
     # login_time = Column(Integer)
+    # securitylevel = Column(SmallInteger, nullable=False, server_default=text("0"))
+
+    __tablename__ = 'syst1011'
+
+    id = Column(Integer, primary_key=True, server_default=text("nextval('syst1011_id_seq'::regclass)"))
+    uuid = Column(UUID)
+    code = Column(String(64))
+    username = Column(String(14))
+    email = Column(String(64))
+    password = Column(String(256), nullable=False)
+    wxopenid = Column(String(256))
+    wxunionid = Column(String(256))
+    objectstate = Column(SmallInteger, nullable=False, server_default=text("1"))
+    securitylevel = Column(SmallInteger, nullable=False, server_default=text("0"))
+    expireon = Column(DateTime)
+    securityquestions = Column(String(256))
+    securityanswers = Column(String(256))
+    rowstate = Column(SmallInteger, nullable=False, server_default=text("1"))
+    verifycode = Column(String)
+    verifyexpiretime = Column(DateTime)
+    upduser = Column(Integer)
+    upddate = Column(DateTime)
+    crtuser = Column(Integer)
+    crtdate = Column(DateTime)
+    login_time = Column(Integer)
 
     def __init__(self, username, password):
         self.username = username

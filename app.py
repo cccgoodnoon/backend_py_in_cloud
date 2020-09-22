@@ -113,10 +113,6 @@ def read_one_activity(mid):
 @app.route('/api/u/activity/<uuid>', methods=['DELETE'])
 def delete_act(uuid):
     cur = conn.cursor()
-    # cur.execute("select uuid from mast1014 where name='{}'".format(name))
-    # course_uuid = cur.fetchall()
-    # print(str(course_uuid[0][0]))
-    # course_id = "'"+ str(course_uuid[0][0]) +"'"
     tmp_uuid = "'" + uuid + "'"
     cur.execute("DELETE from appl1011 where uuid={}".format(tmp_uuid))
     conn.commit()
@@ -239,16 +235,6 @@ def read_one_course(id):
 
 @app.route('/api/admin/task/tasks', methods=['GET'])
 def read_all_admin_tasks():
-    # cur = conn.cursor()
-    # cur.execute(
-    #     "select * from taskthree")
-    # rows = cur.fetchall()
-    # l = []
-    # for row in rows:
-    #     print(row)
-    #     dic= {'id': str(row[0]),'description': str(row[1]),'begintime':str(row[2]),'endtime':str(row[3]),'performer':str(row[4]),'state':str(row[5]),'title':str(row[6])}
-    #     l.append(dic)
-    # return jsonify(l)
     selected_list = []
     result = ss.query(TiTaskModel).all()
     for i in result:
@@ -270,47 +256,14 @@ def read_one_admin_task(id):
     rows = cur.fetchall()
     l = []
     for row in rows:
-        # print(row)
         dic = {'id': str(row[0]), 'description': str(row[14]), 'begintime': str(row[23]), 'endtime': str(row[24]),
                'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15])}
         l.append(dic)
     return jsonify(dic)
-    # o = ss.query(TiTaskModel).get(id)
-    # ss.close()
-    # return o
 
 
 #  select * from taskthree where begintime >=  and endtime < '2015-08-15';
-# @app.route('/api/admin/task/tasks/new',methods=['POST'])
-# def create_task():
-#     data = request.get_json()
-#     print(data)
-#     task_uuid = uuid.uuid1()
-#     task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title']]
-#     if data['isFile']== 1:
-#         last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
-#         print(last_data.uuid)
-#         nodeid = last_data.uuid
-#         o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5], nodeid=nodeid)
-#     if data['isFile']== 0:
-#         o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5])
-#     try:
-#         ss.add(o)
-#         ss.commit()
-#     except Exception as e:
-#         print("TiTaskService.addnew() encounter unexpected exception")
-#         print(e)
-#         raise e
-#     else:
-#         try:
-#             ss.rollback()
-#             ss.close()
-#         except:
-#             ss.rollback()
-#             print('')
-#     finally:
-#         ss.close()
-#     return task_uuid   
+ 
 @app.route('/api/admin/task/tasks/new', methods=['POST'])
 def create_task():
     print("开始创建任务")
@@ -334,18 +287,16 @@ def create_task():
         print(parent_array)
         print(val)
         print("更新1条parent")
-    # task = [data['description'],data['begintime'],data['endtime'],data['performer'],data['state'],data['title']]
-    # if data['isFile']== 1:
-    # last_data= ss.query(TiNodeModel).order_by(TiNodeModel.crtdate.desc()).first()
-    # print(last_data.uuid)
-    # nodeid = last_data.uuid
 
     now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
-    o = TiTaskModel(uuid=task_uuid, description=data['description'], expbegindate=data['begintime'],
-                    expenddate=data['endtime'], executorname=data['performer'], objectstate=data['state'],
-                    title=data['title'], nodeid=task_uuid, parentid=task_uuid)
-    # if data['isFile']== 0:
-    # o =TiTaskModel(task_uuid, description=task[0], expbegindate=task[1], expenddate=task[2], executorname=task[3], objectstate=task[4], title=task[5])
+    if (data['begintime'] == '' or data['endtime'] == ''):
+        o = TiTaskModel(uuid=task_uuid, description=data['description'], expbegindate=now,
+                            expenddate=now, executorname=data['performer'], objectstate=data['state'],
+                            title=data['title'], nodeid=task_uuid, parentid=task_uuid)
+    else:
+        o = TiTaskModel(uuid=task_uuid, description=data['description'], expbegindate=data['begintime'],
+                        expenddate=data['endtime'], executorname=data['performer'], objectstate=data['state'],
+                        title=data['title'], nodeid=task_uuid, parentid=task_uuid)
     try:
         print("任务提交到数据库执行")
         ss.add(o)
@@ -447,18 +398,6 @@ def delete_one_task(id):
 
 @app.route('/api/anon/task/tasks', methods=['GET'])
 def read_all_anon_tasks():
-    # cur = conn.cursor()
-    # cur.execute(
-    #     "select * from taskthree")
-    # rows = cur.fetchall()
-    # l = []
-    # for row in rows:
-    #     print(row)
-    #     dic = {'id': str(row[0]), 'description': str(row[1]), 'begintime': str(row[2]), 'endtime': str(row[3]),
-    #            'performer': str(row[4]), 'state': str(row[5]), 'title': str(row[6])}
-    #     l.append(dic)
-    # return jsonify(l)
-
     selected_list = []
     result = ss.query(TiTaskModel).all()
     for i in result:
@@ -474,17 +413,6 @@ def read_all_anon_tasks():
 
 @app.route('/api/anon/task/tasks/<string:id>', methods=['GET'])
 def read_one_anon_task(id):
-    # cur = conn.cursor()
-    # cur.execute(
-    #     "select * from taskthree where id=" + id)
-    # rows = cur.fetchall()
-    # l = []
-    # for row in rows:
-    #     # print(row)
-    #     dic = {'id': str(row[0]), 'description': str(row[1]), 'begintime': str(row[2]), 'endtime': str(row[3]),
-    #            'performer': str(row[4]), 'state': str(row[5]), 'title': str(row[6])}
-    #     l.append(dic)
-    # return jsonify(dic)
     cur = conn.cursor()
     cur.execute(
         "select * from tran0823 where id=" + id)
@@ -502,6 +430,27 @@ def read_one_anon_task(id):
 #   用户的登录与登出
 #
 # ---------------------------------------------------------------------------------------------------------------
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    print(data)
+    username = data['username']
+    password = data['password']
+    print(username)
+    print(password)
+    user = TiSecModel(username=username, password=TiSecModel.set_password(TiSecModel, password))
+    # result = TiSecModel.add(TiSecModel, user)
+    print(user.id,1111111)
+    if user.id:
+        returnUser = {
+            'id': user.id,
+            'username': user.username,
+            'login_time': user.login_time
+        }
+        return jsonify(trueReturn(returnUser, "用户注册成功"))
+    else:
+        return jsonify(falseReturn('', '用户注册失败'))
+
 
 
 @app.route('/api/anon/login', methods=['POST'])
@@ -513,6 +462,8 @@ def login():
     print(username, '用户名')
     print(password, '密码')
     result = ss.query(TiSecModel).filter(TiSecModel.username == username).first()
+    print(result,111)
+    print(TiSecModel.check_password(TiSecModel, result.password, password),222)
     if (TiSecModel.check_password(TiSecModel, result.password, password)):
         if (result == None):
             print("出错")
@@ -523,6 +474,7 @@ def login():
                 return falseReturn('', '用户名和密码不能为空')
             else:
                 return authenticate(username, password)
+    return "1"
 
 
 @app.route('/api/anon/user/info', methods=['GET'])
@@ -786,7 +738,7 @@ def user_fdb_uploadinto():
         return resp
     print('开始上传文件')
     file = request.files['file']
-    try:
+    try:     
         if session['nodeid']:
             print('seesion不为空：' + session['nodeid'])
     except:
@@ -817,58 +769,6 @@ def user_fdb_uploadinto():
         return resp
 
 
-# @app.route('/api/u/fdb/m/task', methods=['POST'])
-# def user_multi_fdb_upload():
-#     if 'file' not in request.files:
-#         resp = jsonify({'message': 'No file part in the request'})
-#         resp.status_code = 400
-#         return resp
-#     files = request.files.getlist('file')
-#     print(files, 111)
-#     print('file', 222)
-#     errors = {}
-#     success = False
-#     # parentid = uuid.uuid1()
-#     # print(parentid,type(parentid))
-#     parent = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-#     # parent = str(uuid.uuid1() ).replace("-", "")
-#     # l=[]
-#     # l.append(parent)
-#     # parent ="parentid"
-#     # if parent !=
-#     print(parent, "parent", type(parent), 663)
-#     # print(l)
-#     for file in files:
-#         if file and allowed_file(file.filename):
-#             originname = secure_filename(file.filename)
-#             curname = change_filename(originname)
-#             file.save(os.path.join(UPLOAD_FOLDER, originname))
-#
-#             file = {'originname': originname, 'curname': curname, 'parent': parent}
-#             print(file)
-#             # children =[]
-#             file_nodeid = addmulti(file)  # 新增两条node表数据
-#             # children.append(file_nodeid)
-#             # print(children)
-#             print(file_nodeid)
-#             success = True
-#         else:
-#             errors[file.filename] = 'File type is not allowed'
-#     if success and errors:
-#         errors['message'] = 'File(s) successfully uploaded'
-#         resp = jsonify(errors)
-#         resp.status_code = 500
-#         return resp
-#     if success:
-#         resp = jsonify({'message': 'Files successfully uploaded', 'status': 201, 'nodeid': file_nodeid})
-#         resp.status_code = 201
-#         return resp
-#     else:
-#         resp = jsonify(errors)
-#         resp.status_code = 500
-#         return resp
-
-
 def addnew(file):
     print(session['nodeid'])
     cur = conn.cursor()
@@ -885,19 +785,6 @@ def addnew(file):
                 (node_uuid, file['originname'], file['curname'], now, now, parent_array))
     conn.commit()
     return nodeid
-
-
-# def addmulti(file):
-#     cur = conn.cursor()
-#     now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
-#     nodeid = uuid.uuid1()
-#     print(type(nodeid))
-#     children = str(nodeid)
-#     cur.execute(
-#         "insert into node(uuid, originname, curname, parent, upddate, crtdate, children) values(%s,%s,%s,%s,%s,%s,%s)",
-#         (nodeid, file['originname'], file['curname'], file['parent'], now, now, children))
-#     conn.commit()
-#     return nodeid
 
 
 @app.route('/api/u/fdb/task/<uuid>', methods=['GET'])
@@ -982,8 +869,6 @@ def change_filename(filename):
 
 @app.route('/api/u/activity', methods=['GET'])
 def read_avtivities():
-    conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2018openedu", host="202.120.167.50", port="5432")
     cur = conn.cursor()
     cur.execute(
         "select APPL1011.uuid,APPL1011.category,APPL1011.memberid,APPL1011.begintime,APPL1011.endtime,APPL1011.workday,APPL1011.workpoint,MAST0501.employeeid,MAST0501.firstname,MAST0501.title,APPL1011.courseid,MAST1014.code,MAST1014.name,MAST1014.credit,APPL1011.objectstate from APPL1011  join MAST0501 ON(APPL1011.memberid=MAST0501.uuid) join MAST1014 ON(APPL1011.courseid=MAST1014.uuid)")
@@ -1010,8 +895,6 @@ def read_avtivities():
 
 @app.route("/api/u/export/report2", methods=['GET'])
 def export_records2():
-    conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2018openedu", host="202.120.167.50", port="5432")
     cur = conn.cursor()
     sq1 = "select uuid,id,employeeid,firstname from mast0501"
     sq2 = "select courseid from appl1011 where memberid={} and objectstate='3'"
@@ -1058,14 +941,10 @@ def export_records2():
     conn.commit()
     print("Update Successfully")
     conn.close()
-    # return excel.make_response_from_records(l, "xlsx",
-    #                                         file_name=u"REPT1012 教师排课一览表")
 
 
 @app.route("/api/u/export/report3", methods=['GET'])
 def export_records3():
-    conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
     cur = conn.cursor()
     sq1 = "select uuid,code,name from mast1014"
     sq2 = "select memberid from appl1011 where courseid={} and objectstate='3'"
@@ -1116,9 +995,6 @@ def export_records3():
 
 @app.route('/api/u/activity/coursename/<string:name>', methods=['GET'])
 def read_activity_by_coursename(name):
-    conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
-        # database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
     cur = conn.cursor()
     tmp_name = "'" + name + "'"
     cur.execute(
@@ -1126,7 +1002,6 @@ def read_activity_by_coursename(name):
     )
     courses = cur.fetchall()
     id = courses[0][0]
-    # courseid='55bb4506-8610-11ea-b832-e43c8a9c5604'
     courseid = "'" + id + "'"
     cur.execute(
         "select APPL1011.uuid,APPL1011.category,APPL1011.memberid,APPL1011.begintime,APPL1011.endtime,APPL1011.workday,APPL1011.workpoint,MAST0501.employeeid,MAST0501.firstname,MAST0501.title,APPL1011.courseid,MAST1014.id,MAST1014.name,MAST1014.credit,APPL1011.objectstate from APPL1011  join MAST0501 ON(APPL1011.memberid=MAST0501.uuid) join MAST1014 ON(APPL1011.courseid=MAST1014.uuid) where courseid={}".format(
@@ -1149,9 +1024,6 @@ def read_activity_by_coursename(name):
 
 @app.route('/api/u/activity/membername/<string:name>', methods=['GET'])
 def read_activity_by_membername(name):
-    conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
-        # database="postgres", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
     cur = conn.cursor()
     tmp_name = "'" + name + "'"
     cur.execute(
@@ -1187,14 +1059,10 @@ def read_activity_test():
     # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
     directory = os.getcwd()  # 假设在当前目录
     return send_from_directory(directory, filename, as_attachment=True)
-    # return filepath+filename
 
 
 @app.route('/api/u/node', methods=['GET'])
 def read_node():
-    conn = psycopg2.connect(
-        database="postgres", user="postgres", password="tongji2018opendeu", host="202.120.167.50", port="5432")
-        # database="dm365", user="postgres", password="tongji2020", host="47.111.234.116", port="5432")
     cur = conn.cursor()
     cur.execute("select uuid,originname,curname,upddate,crtdate from node")
     rows = cur.fetchall()
@@ -1212,22 +1080,7 @@ def read_node():
     return jsonify(l)
 
 
-# @app.route('/api/u/ecg', methods=['GET'])
-# def read_ecg():
-#     f = open('G:\\迅雷下载\\samples.csv')
-#     # res = pd.read_csv(f)
-#     data = pd.read_csv(f, header=1)
-#     data2 = data.values[0:100]
-#     dic = {}
-#     for i in range(len(data2)):
-#         data2[i][0] = data2[i][0][2:14]
-#     dic['date'] = data2[..., 0].tolist()
-#     dic['uv'] = data2[..., 1].tolist()
-#     return jsonify(dic)
-
-
 if __name__ == '__main__':
-    # excel.init_excel(app)  ## 下载excel必须 请勿注释
-    from werkzeug.contrib.fixers import ProxyFix
-    app.wsgi_app = ProxyFix(app.wsgi_app)
+    # from werkzeug.contrib.fixers import ProxyFix
+    # app.wsgi_app = ProxyFix(app.wsgi_app)
     app.run()
