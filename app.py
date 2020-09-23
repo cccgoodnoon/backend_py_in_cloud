@@ -536,7 +536,7 @@ def authenticate(username, password):
             
             login_time = int(time.time())
             user = userInfo
-            # print(user,"数据库里的表？")
+            print(user.securitylevel,4325254)
             user.login_time = login_time
             # self.ss.add(user)
             ss.commit()
