@@ -259,14 +259,14 @@ def read_one_admin_task(id):
         dic = {'id': str(row[0]), 'description': str(row[14]), 'begintime': str(row[23]), 'endtime': str(row[24]),
                'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15]),'categoryid': str(row[4])}
         l.append(dic)
-    return jsonify(dic)
+    return jsonify(l)
 
 @app.route('/api/admin/task/tasks/byauth/<securitylevel>', methods=['GET'])
 def read_one_admin_task_by_auth(securitylevel):
     cur = conn.cursor()
     print(securitylevel)
     l = []
-    if securitylevel==1:
+    if securitylevel==0:
         cur.execute(
              "select * from tran0823 where categoryid=" + securitylevel)
         rows = cur.fetchall()
