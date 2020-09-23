@@ -241,7 +241,7 @@ def read_all_admin_tasks():
         expbegindate = i.expbegindate.strftime('%Y-%m-%d')
         expenddate = i.expenddate.strftime('%Y-%m-%d')
         t = {'id': i.id, 'uuid': i.uuid, 'description': i.description, 'begintime': expbegindate, 'endtime': expenddate,
-             'performer': i.executorname, 'title': i.title, 'state': i.objectstate, 'nodeid': i.nodeid}
+             'performer': i.executorname, 'title': i.title, 'state': i.objectstate, 'nodeid': i.nodeid, 'categoryid':i.categoryid}
         # nodeid 是 parent ,传到前端
         selected_list.append(t)
     # return jsonify(selected_list)
@@ -261,7 +261,24 @@ def read_one_admin_task(id):
         l.append(dic)
     return jsonify(dic)
 
-
+@app.route('/api/admin/task/tasks/byauth/<securitylevel>', methods=['GET'])
+def read_one_admin_task_by_auth(securitylevel):
+    cur = conn.cursor()
+    print(securitylevel)
+    l = []
+    if securitylevel==1:
+        cur.execute(
+             "select * from tran0823 where categoryid=" + securitylevel)
+        rows = cur.fetchall()
+    else:
+        cur.execute(
+             "select * from tran0823")        
+        rows = cur.fetchall()
+    for row in rows:
+        dic = {'id': str(row[0]), 'description': str(row[14]), 'begintime': str(row[23]), 'endtime': str(row[24]),
+            'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15]),'categoryid': str(row[4])}
+        l.append(dic)
+    return jsonify(l)
 #  select * from taskthree where begintime >=  and endtime < '2015-08-15';
  
 @app.route('/api/admin/task/tasks/new', methods=['POST'])
@@ -287,7 +304,6 @@ def create_task():
         print(parent_array)
         print(val)
         print("更新1条parent")
-
     now = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(round(time.time() * 1000)) / 1000))
     if (data['begintime'] == '' or data['endtime'] == ''):
         o = TiTaskModel(uuid=task_uuid, description=data['description'], expbegindate=now,
@@ -342,17 +358,13 @@ def update_one_task(id):
     print(file_list)
     print(form)
     print(data)
-    # cur.execute("UPDATE taskthree SET performer = '{}', title = '{}', description = '{}', state = '{}', begintime = '{}', endtime = '{}'  WHERE id = {}"
-    #     .format(data['performer'],data['title'],data['description'],data['state'],data['begintime'],data['endtime'], id))
-    # conn.commit()
-    # return "1"
     if data['nodeid'] == 'None':
         task = [data['description'], data['begintime'], data['endtime'], data['performer'], data['state'],
-                data['title'], id]
+                data['title'],data['nodeid'], data['categoryid'], id]
         origin = ss.query(TiTaskModel).filter_by(id=task[-1]).first()
     else:
         task = [data['description'], data['begintime'], data['endtime'], data['performer'], data['state'],
-                data['title'], data['nodeid'], id]
+                data['title'], data['nodeid'], data['categoryid'], id]
         origin = ss.query(TiTaskModel).filter_by(id=task[-1]).first()
         origin.nodeid = task[6]
     origin.description = task[0]
@@ -361,6 +373,7 @@ def update_one_task(id):
     origin.executorname = task[3]
     origin.objectstate = task[4]
     origin.title = task[5]
+    origin.categoryid=task[7]
     ss.add(origin)
     print('修改成功')
     ss.commit()
