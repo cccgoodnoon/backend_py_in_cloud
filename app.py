@@ -264,11 +264,10 @@ def read_one_admin_task(id):
 @app.route('/api/admin/task/tasks/byauth/<securitylevel>', methods=['GET'])
 def read_one_admin_task_by_auth(securitylevel):
     cur = conn.cursor()
-    print(securitylevel)
+    auth = int(securitylevel)
     l = []
-    if securitylevel==0:
-        cur.execute(
-             "select * from tran0823 where categoryid=" + securitylevel)
+    if auth==0:
+        cur.execute("select * from tran0823 WHERE categoryid = {}".format(auth))
         rows = cur.fetchall()
     else:
         cur.execute(
