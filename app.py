@@ -7,7 +7,7 @@ import psycopg2.extras
 import flask_excel as excel
 from pyexcel_xlsx import save_data
 import os
-# import pandas as pd
+import pandas as pd
 from sqlalchemy import create_engine, Column, Integer, String, func
 from sqlalchemy.dialects.postgresql import Any
 from sqlalchemy.ext.declarative import declarative_base
@@ -37,8 +37,8 @@ password = 'tongji2018openedu'
 database = 'postgres'
 dd = 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, database)
 
-# UPLOAD_FOLDER = 'D:/uploads'
-UPLOAD_FOLDER = '/root/var/upload'
+UPLOAD_FOLDER = 'D:/uploads'
+# UPLOAD_FOLDER = '/root/var/upload'
 
 ALLOWED_EXTENSIONS = set(
     ['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'mp4', 'zip', 'rar'])
@@ -425,6 +425,27 @@ def read_all_anon_tasks():
     # return jsonify(selected_list)
     return Response(json.dumps(selected_list), mimetype='application/json')
 
+
+@app.route('/api/anon/task/tasks/byauth/<securitylevel>', methods=['GET'])
+def read_anon_task_by_auth(securitylevel):
+    cur = conn.cursor()
+    print(securitylevel)
+    auth = int(securitylevel)
+    print(type(auth))
+    l = []
+    if auth==0:
+        cur.execute("select * from tran0823 WHERE categoryid = {}".format(auth))
+        rows = cur.fetchall()
+        print(rows)
+    else:
+        cur.execute(
+             "select * from tran0823")        
+        rows = cur.fetchall()
+    for row in rows:
+        dic = {'id': str(row[0]), 'description': str(row[14]), 'begintime': str(row[23]), 'endtime': str(row[24]),
+            'performer': str(row[7]), 'state': str(row[18]), 'title': str(row[13]), 'nodeid': str(row[15]),'categoryid': str(row[4])}
+        l.append(dic)
+    return jsonify(l)
 
 @app.route('/api/anon/task/tasks/<string:id>', methods=['GET'])
 def read_one_anon_task(id):
@@ -918,7 +939,7 @@ def read_avtivities():
     print(l)
     conn.commit()
     print("Update Successfully")
-    conn.close()
+    # conn.close()
     return jsonify(l)
 
 
@@ -961,7 +982,7 @@ def export_records2():
     print(l)
     filename = 'REPT1012.xlsx'
     df = pd.DataFrame(l)
-    print(df)
+    # print(df)
     # # 保存到本地excel
     df.to_excel(filename)
     # # 需要知道2个参数, 第1个参数是本地目录的path, 第2个参数是文件名(带扩展名)
@@ -969,7 +990,7 @@ def export_records2():
     return send_from_directory(directory, filename, as_attachment=True)
     conn.commit()
     print("Update Successfully")
-    conn.close()
+    # conn.close()
 
 
 @app.route("/api/u/export/report3", methods=['GET'])
@@ -1019,7 +1040,7 @@ def export_records3():
     return send_from_directory(directory, filename, as_attachment=True)
     conn.commit()
     print("Update Successfully")
-    conn.close()
+    # conn.close()
 
 
 @app.route('/api/u/activity/coursename/<string:name>', methods=['GET'])
@@ -1047,7 +1068,7 @@ def read_activity_by_coursename(name):
     print(l)
     conn.commit()
     print("Update Successfully")
-    conn.close()
+    # conn.close()
     return jsonify(l)
 
 
@@ -1077,7 +1098,7 @@ def read_activity_by_membername(name):
     print(l)
     conn.commit()
     print("Update Successfully")
-    conn.close()
+    # conn.close()
     return jsonify(l)
 
 
@@ -1105,7 +1126,7 @@ def read_node():
     print(l)
     conn.commit()
     print("Update Successfully")
-    conn.close()
+    # conn.close()
     return jsonify(l)
 
 
