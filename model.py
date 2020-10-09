@@ -14,15 +14,6 @@ BaseModel = declarative_base()
 
 
 class TiSecModel(BaseModel):
-    # __tablename__ = 'tempuser'
-    # __tablename__ = 'user'
-
-    # id = Column('id', Integer, primary_key=True, nullable=True)
-    # username = Column('username', String(64), unique=True, nullable=True)
-    # password = Column('password', String(250), nullable=True)
-    # login_time = Column(Integer)
-    # securitylevel = Column(SmallInteger, nullable=False, server_default=text("0"))
-
     __tablename__ = 'syst1011'
 
     id = Column(Integer, primary_key=True, server_default=text("nextval('syst1011_id_seq'::regclass)"))
@@ -163,5 +154,5 @@ engine = create_engine(
         pool_recycle=-1,  # 多久之后对线程中的线程进行一次连接的回收(重置)
 
     )
-
+# 创建数据表，如果已经存在则忽略
 BaseModel.metadata.create_all(engine)
